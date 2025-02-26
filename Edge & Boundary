@@ -1,0 +1,47 @@
+import cadquery as cq
+from OCP.IFSelect import IFSelect_RetDone
+from OCP.STEPControl import STEPControl_Reader
+from OCP.TopExp import TopExp_Explorer
+from OCP.TopAbs import TopAbs_EDGE, TopAbs_WIRE
+from OCP.BRep import BRep_Tool
+from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeWire
+
+def read_stp_file(file_path):
+    reader = STEPControl_Reader()
+    status = reader.ReadFile(file_path)
+    if status != IFSelect_RetDone:
+        raise ValueError("Error reading the STP file")
+    
+    reader.TransferRoots()
+    shape = reader.OneShape()
+    return shape
+
+def get_edges(shape):
+    explorer = TopExp_Explorer(shape, TopAbs_EDGE)
+    edges = []
+    while explorer.More():
+        edges.append(explorer.Current())
+        explorer.Next()
+    return edges
+
+def get_wires(shape):
+    explorer = TopExp_Explorer(shape, TopAbs_WIRE)
+    wires = []
+    while explorer.More():
+        wires.append(explorer.Current())
+        explorer.Next()
+    return wires
+
+def main():
+    file_path = "your_file.stp"  # Change to your STP file path
+    shape = read_stp_file(file_path)
+    print("Shape Loaded Successfully")
+    
+    edges = get_edges(shape)
+    print(f"Number of edges: {len(edges)}")
+    
+    wires = get_wires(shape)
+    print(f"Number of wires (boundaries): {len(wires)}")
+    
+if __name__ == "__main__":
+    main()
