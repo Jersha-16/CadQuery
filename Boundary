@@ -1,0 +1,65 @@
+import cadquery as cq
+from OCP.IFSelect import IFSelect_RetDone
+from OCP.STEPControl import STEPControl_Reader, STEPControl_Writer, STEPControl_AsIs
+from OCP.TopExp import TopExp_Explorer
+from OCP.TopAbs import TopAbs_EDGE, TopAbs_WIRE, TopAbs_FACE
+from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeWire
+from OCP.BRepTools import BRepTools
+from OCP.BRep import BRep_Tool
+from OCP.BRepTools import BRepTools_WireExplorer
+from OCP.ShapeAnalysis import ShapeAnalysis_FreeBounds
+
+def read_stp_file(file_path):
+    reader = STEPControl_Reader()
+    status = reader.ReadFile(file_path)
+    if status != IFSelect_RetDone:
+        raise ValueError("Error reading the STP file")
+    
+    reader.TransferRoots()
+    shape = reader.OneShape()
+    return shape
+
+def get_edges(shape):
+    explorer = TopExp_Explorer(shape, TopAbs_EDGE)
+    edges = []
+    while explorer.More():
+        edges.append(explorer.Current())
+        explorer.Next()
+    return edges
+
+def get_boundary_wires(shape):
+    free_bounds = ShapeAnalysis_FreeBounds()
+    outer_wires, _ = free_bounds.Perform(shape, True, False)
+    return outer_wires
+
+def save_stp_file(shape, file_path):
+    writer = STEPControl_Writer()
+    writer.Transfer(shape, STEPControl_AsIs)
+    writer.Write(file_path)
+
+def main():
+    input_file = "your_file.stp"  # Change to your STP file path
+    edges_file = "edges_output.stp"
+    boundary_file = "boundary_output.stp"
+    
+    shape = read_stp_file(input_file)
+    print("Shape Loaded Successfully")
+    
+    edges = get_edges(shape)
+    print(f"Number of edges: {len(edges)}")
+    
+    boundary_wires = get_boundary_wires(shape)
+    print(f"Number of boundary wires: {len(boundary_wires)}")
+    
+    if edges:
+        edge_shape = BRepBuilderAPI_MakeWire(*edges).Wire()
+        save_stp_file(edge_shape, edges_file)
+        print(f"Edges saved to {edges_file}")
+    
+    if boundary_wires:
+        boundary_shape = BRepBuilderAPI_MakeWire(*boundary_wires).Wire()
+        save_stp_file(boundary_shape, boundary_file)
+        print(f"Boundary wire saved to {boundary_file}")
+    
+if __name__ == "__main__":
+    main()
